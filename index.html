@@ -82,14 +82,31 @@ It is also used to install apps that are not on the Apple App Store, and tweak y
 Jailbreaks have played a big role in the iPhone from the beginning, as the first jailbreak was published only a few days after the release of the first iPhone. Since then, Apple has upgraded the security of the hardware and the software significantly. Some current versions of iOS and the iPhone have no public jailbreaks.
 ---
 
-# 2.How did this exploit start ?
+# 2. How did this exploit start ?
 ???
 Now we can dive into the technical.
---
+---
 
-### -
+## 2.1 - ipwndfu and apollo.txt
+### - Late 2019
+### - Targets SecureROM (immutable code), so unpatchable
+### - Leads to *checkra1n*
 ???
-The exploit was first published in
+The exploit was first published in September 2019 by axi0mX in his pwn tool ipwndfu, although littlelailo claimed to have discovered it in March in a text file, apollo.txt.
+It targets SecureROM, the first part of the iOS cold boot process, which is hard-coded in silicon, so unpatchable.
+Over the months it was used to create a full jailbreak for iPhones 5s to X, named checkra1n.
+
+---
+## 2.2 - checkm8 : DFU and use-after-free
+### - USB DFU protocol initiated 
+???
+Now let's talk about the actual checkm8 exploit.
+SecureROM DFU image upload is used by Apple to bypass iBoot, the next part of the boot process, as an emergency recovery mecanism.
+The image and its signature will be verified before it is used.
+[Interactive] How many of you know what a use-after-free exploit does ?
+At the root of the exploit is a bug in the USB protocol of SecureROM.
+DFU stands for "Device Firmware Upgrade". It is a special USB mode that allows you to transfer an image over USB.
+The checkm8 exploit uses a use-after-free bug in the DFU code of the SecureROM.
 
     </textarea>
     <script src="https://remarkjs.com/downloads/remark-latest.min.js">

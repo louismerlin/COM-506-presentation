@@ -38,6 +38,7 @@
         background: url(https://www.epfl.ch/campus/services/communication/wp-content/uploads/2019/03/EPFL-Corp-ID-New-Visual-Identity-Logo.png) no-repeat bottom left;
         background-size: 256px;
         background-position: -50px 552px;
+        font-size: 25px;
       }
     </style>
   </head>
@@ -74,6 +75,7 @@ It typically involves some kind of privilege escalation on iOS, making the user 
 ### - Mobile carrier unlocking and device customization
 ???
 A big usage of jailbreaking used to be for mobile carrier unlocking, if you wanted to switch your mobile carrier, say, from Swisscom to Salt or the other way around.
+
 It is also used to install apps that are not on the Apple App Store, and tweak your device in different ways. I remember on one of the first versions of iOS, I used jailbreaking to change the background image of my iPod Touch from the only choice, black, to some picture I found cool at the time.
 --
 
@@ -92,21 +94,63 @@ Now we can dive into the technical.
 ### - Targets SecureROM (immutable code), so unpatchable
 ### - Leads to *checkra1n*
 ???
-The exploit was first published in September 2019 by axi0mX in his pwn tool ipwndfu, although littlelailo claimed to have discovered it in March in a text file, apollo.txt.
+The exploit was first published in September 2019 by axi0mX in his pwn tool ipwndfu, although littlelailo claimed to have discovered it in March and published it in a text file.
+
 It targets SecureROM, the first part of the iOS cold boot process, which is hard-coded in silicon, so unpatchable.
+
 Over the months it was used to create a full jailbreak for iPhones 5s to X, named checkra1n.
 
 ---
-## 2.2 - checkm8 : DFU and use-after-free
-### - USB DFU protocol initiated 
+## 2.2 - Normal use of DFU
+- Start USB DFU protocol:
+  - Input output buffer is allocated by the device in the ram
+  - Address is given to usb stack via global variable
+  - Image is transfered to the device
+  - Image is copied to the memory location from where the boot will happen
+  - Image is verified
+- On DFU exit:
+  - i/o buffer is freed
+  - If parsing the image fails, the USB stack is activated again
+???
+SecureROM DFU image upload is used by Apple to bypass iBoot, the next part of the boot process, as an emergency recovery mecanism.
+
+The image and its signature will be verified before it is used.
+
+The signature is one of Apple's public keys, which are 2048-bit long RSA public keys.
+
+---
+## 2.3 - checkm8
+- Start USB DFU protocol:
+  - Input output buffer is allocated by the device in the ram
+  - Address is given to usb stack via global variable
+  - Image is transfered to the device <span style="color:tomato">INTERRUPT</span>
+  - <s>Image is copied to the memory location from where the boot will happen</s>
+  - <s>Image is verified</s>
+- On DFU exit:
+  - i/o buffer is freed <span style="color:tomato">=> use-after-free</span>
+  - If parsing the image fails, the USB stack is activated again
 ???
 Now let's talk about the actual checkm8 exploit.
-SecureROM DFU image upload is used by Apple to bypass iBoot, the next part of the boot process, as an emergency recovery mecanism.
-The image and its signature will be verified before it is used.
-[Interactive] How many of you know what a use-after-free exploit does ?
-At the root of the exploit is a bug in the USB protocol of SecureROM.
-DFU stands for "Device Firmware Upgrade". It is a special USB mode that allows you to transfer an image over USB.
-The checkm8 exploit uses a use-after-free bug in the DFU code of the SecureROM.
+
+---
+## 2.4 - A8 and A9 processors
+### - A8 : iPhone 6 and 6+
+### - A9 : iPhone 6s and 6s+
+### - Use-after-free overwrites USB stack
+### - 🙌
+???
+In the case of two processors, the A8 and the A9, we can directy overwrite the USB stack, and thus we have direct code execution.
+
+Easy Peasy !
+
+---
+## 2.5 - The rest...
+###
+???
+For the rest of the vulnerable processors, we can allocate and free data, but we do not get determinism on where the data is.
+
+---
+Now we have reliable code execution ! But let's not end here, let's try to boot now.
 
     </textarea>
     <script src="https://remarkjs.com/downloads/remark-latest.min.js">

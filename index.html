@@ -132,11 +132,14 @@ The signature is one of Apple's public keys, which are 2048-bit long RSA public 
 ???
 Now let's talk about the actual checkm8 exploit.
 
+After the USB stack is activated again, if we send the device data instead of a setup packet, the device will copy data on the dangling pointer.
+
 ---
 ## 2.4 - A8 and A9 processors
-### - A8 : iPhone 6 and 6+
-### - A9 : iPhone 6s and 6s+
+### - iPhone 6, 6+, 6s and 6s+
 ### - Use-after-free overwrites USB stack
+### - USB tasks are a linked list of tasks
+### - Overwrite the current task's **next** value, and create that next task
 ### - 🙌
 ???
 In the case of two processors, the A8 and the A9, we can directy overwrite the USB stack, and thus we have direct code execution.
@@ -145,9 +148,40 @@ Easy Peasy !
 
 ---
 ## 2.5 - The rest...
-###
+### - The ROM is deterministic, an the USB stack is not where we need it to be.
+
 ???
 For the rest of the vulnerable processors, we can allocate and free data, but we do not get determinism on where the data is.
+
+--
+### - Heap Feng Shui to the rescue !
+???
+For this, we use Heap Feng Shui. The way the buffers are allocated is actually deterministic.
+---
+
+```
+def stall(device):
+  libusb1_async_ctrl_transfer(device, 0x80, 6, 0x304,
+                              0x40A, 'A' * 0xC0, 0.00001)
+def leak(device):
+  libusb1_no_error_ctrl_transfer(device, 0x80, 6, 0x304,
+                                 0x40A, 0xC0, 1)
+def no_leak(device):
+  libusb1_no_error_ctrl_transfer(device, 0x80, 6, 0x304,
+                                 0x40A, 0xC1, 1)
+```
+
+```
+stall(device)
+leak(device)
+for i in range(6):
+    no_leak(device)
+dfu.usb_reset(device)
+dfu.release_device(device)
+```
+???
+So we launch multiple USB transfers at the same time, until the stars align and we can insert a gadget.
+---
 
 ---
 Now we have reliable code execution ! But let's not end here, let's try to boot now.

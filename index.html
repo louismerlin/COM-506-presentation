@@ -101,7 +101,9 @@ It targets SecureROM, the first part of the iOS cold boot process, which is hard
 Over the months it was used to create a full jailbreak for iPhones 5s to X, named checkra1n.
 
 ---
-## 2.2 - Normal use of DFU
+# 3. How does the jailbreak work ?
+
+## 3.1 - Normal use of DFU
 - Start USB DFU protocol:
   - Input output buffer is allocated by the device in the ram
   - Address is given to usb stack via global variable
@@ -119,7 +121,7 @@ The image and its signature will be verified before it is used.
 The signature is one of Apple's public keys, which are 2048-bit long RSA public keys.
 
 ---
-## 2.3 - checkm8
+## 3.2 - checkm8
 - Start USB DFU protocol:
   - Input output buffer is allocated by the device in the ram
   - Address is given to usb stack via global variable
@@ -135,7 +137,7 @@ Now let's talk about the actual checkm8 exploit.
 After the USB stack is activated again, if we send the device data instead of a setup packet, the device will copy data on the dangling pointer.
 
 ---
-## 2.4 - A8 and A9 processors
+## 3.3 - A8 and A9 processors
 ### - iPhone 6, 6+, 6s and 6s+
 ### - Use-after-free overwrites USB stack
 ### - USB tasks are a linked list of tasks
@@ -147,7 +149,7 @@ In the case of two processors, the A8 and the A9, we can directy overwrite the U
 Easy Peasy !
 
 ---
-## 2.5 - The rest...
+## 3.4 - The rest...
 ### - The ROM is deterministic, an the USB stack is not where we need it to be.
 
 ???
@@ -158,6 +160,8 @@ For the rest of the vulnerable processors, we can allocate and free data, but we
 ???
 For this, we use Heap Feng Shui. The way the buffers are allocated is actually deterministic.
 ---
+
+### Heap Feng Shui
 
 ```
 def stall(device):
@@ -181,10 +185,63 @@ dfu.release_device(device)
 ```
 ???
 So we launch multiple USB transfers at the same time, until the stars align and we can insert a gadget.
+
+The "leak" invocation will create a hole in the RAM the size of a USB task, so that it will become the prefered place to put the USB task once the heap becomes full.
 ---
 
+### Payload
+```
+0x1800B0000: t8010_shellcode  # initializing shell-code
+...
+0x1800B0180: t8010_handler  # new usb request handler
+...
+0x1800B0400: 0x1000006a5  # fake translation table descriptor
+                          # matches the value in the original
+                            translation table
+...
+0x1800B0600: 0x60000180000625  # fake translation table descriptor
+                               # matches the value in the original
+                                 translation table
+0x1800B0608: 0x1800006a5  # fake translation table descriptor
+                          # plus, in this descriptor,there are rights
+                            for code execution
+0x1800B0610: disabe_wxn_arm64  # code for disabling WXN
+0x1800B0800: usb_rop_callbacks  # callback-chain
+```
+???
+As you can see, the payload defines a few fake address translation tables, to take over the system.
+
+WXN (Write permission implies Execute-never) is disabled which enables the code execution in RW memory.
+
+The modified translation table makes WXN disabling code execution possible.
 ---
-Now we have reliable code execution ! But let's not end here, let's try to boot now.
+
+### Final steps of exploit
+- Restore USB configuration
+- USB Serial Number = "PWND:[checkm8]"
+- Replace USB request handler pointer
+
+???
+We now restore the USB configuration to regain access to the device from the outside.
+
+The shellcode then overwrites a few values to tell the hacker that the execution was successful.
+
+Namely, the USB serial number is replaced with "PWND:[checkm8]"
+
+Finaly, we initiate a new USB transfer for the bootkit to load and execute.
+---
+
+## 3.5 - The Bootkit
+
+???
+Trampoline ?
+
+Chicken and egg ?
+
+Dirty workaround, bzero ?
+
+Retain code execution in usermode ? => Embed a tiny ramdisk in the shellcode
+
 
     </textarea>
     <script src="https://remarkjs.com/downloads/remark-latest.min.js">

@@ -59,6 +59,7 @@ class: center, middle
 ### 1. What is a jailbreak ?
 ### 2. How did this exploit start ?
 ### 3. How does the jailbreak work ?
+### 4. Conclusion
 
 ---
 
@@ -86,7 +87,7 @@ Jailbreaks have played a big role in the iPhone from the beginning, as the first
 
 # 2. How did this exploit start ?
 ???
-Now we can dive into the technical.
+Now we can dive into the history of this exploit.
 ---
 
 ## 2.1 - ipwndfu and apollo.txt
@@ -99,9 +100,10 @@ The exploit was first published in September 2019 by axi0mX in his pwn tool ipwn
 It targets SecureROM, the first part of the iOS cold boot process, which is hard-coded in silicon, so unpatchable.
 
 Over the months it was used to create a full jailbreak for iPhones 5s to X, named checkra1n.
-
 ---
+
 # 3. How does the jailbreak work ?
+---
 
 ## 3.1 - Normal use of DFU
 - Start USB DFU protocol:
@@ -233,15 +235,36 @@ Finaly, we initiate a new USB transfer for the bootkit to load and execute.
 
 ## 3.5 - The Bootkit
 
+- Boot normally and compromise the stages one after the other
+--
+
+- **But** iBoot will reset all registers and wipe memory ("trampoline")
+--
+
+- We can hook bzero to avoid that
 ???
-Trampoline ?
+The bzero method (changes all data to \0 in specific memory space) is hooked into so that it never reaches our bootloader (transformed into a NOP).
 
-Chicken and egg ?
+This is a "hacky" way to do it according to the people who wrote it, but at least it has the advantage to work on all devices, and to be independent of future code changes.
 
-Dirty workaround, bzero ?
+We now have read-write access to the kernel in the ram, but not to the iPhone's memory.
+--
 
-Retain code execution in usermode ? => Embed a tiny ramdisk in the shellcode
+- Embed tiny ramdisk in kernel with hijack code
+???
+In order to retain code execution in usermode, we can embed a tiny ramdisk in the shellcode, in order to hijack root code execution once the phone is booted.
+--
 
+- We now have a fork(2) during system boot
+???
+The system will now fork(2) off right as it is booting iOS. In this fork we can launch an SSH daemon to get remote access to the system, and we can also load custom .app files to be installed on the system.
+---
+
+# 4. Conclusion
+### - latest full jailbreak was on iOS 8 (2014)
+### - enables researchers to do security research
+### - dual booting
+### - Linux on iPhone ?
 
     </textarea>
     <script src="https://remarkjs.com/downloads/remark-latest.min.js">

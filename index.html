@@ -83,6 +83,8 @@ It is also used to install apps that are not on the Apple App Store, and tweak y
 ### - First jailbreak came out a few days after the first iPhone (2007)
 ???
 Jailbreaks have played a big role in the iPhone from the beginning, as the first jailbreak was published only a few days after the release of the first iPhone. Since then, Apple has upgraded the security of the hardware and the software significantly. Some current versions of iOS and the iPhone have no public jailbreaks.
+
+Also, many security researchers that find those jailbreaks end up working on security at Apple.
 ---
 
 # 2. How did this exploit start ?
@@ -136,7 +138,11 @@ The signature is one of Apple's public keys, which are 2048-bit long RSA public 
 ???
 Now let's talk about the actual checkm8 exploit.
 
-After the USB stack is activated again, if we send the device data instead of a setup packet, the device will copy data on the dangling pointer.
+When we interrupt the USB transfer midway, the code jumps to the "On DFU exit" part.
+
+The i/o buffer is freed, but the global pointer is never NULLed out.
+
+After the USB stack is activated again, if we send the device data instead of a setup packet, the device will copy data on the dangling pointer. This is a typical use-after-free vulnerability.
 
 ---
 ## 3.3 - A8 and A9 processors
@@ -160,7 +166,7 @@ For the rest of the vulnerable processors, we can allocate and free data, but we
 --
 ### - Heap Feng Shui to the rescue !
 ???
-For this, we use Heap Feng Shui. The way the buffers are allocated is actually deterministic.
+For this, we use Heap Feng Shui. The way the buffers are allocated is actually deterministic, as the process will allocate the smallest hole in memory that fits the data.
 ---
 
 ### Heap Feng Shui
@@ -243,7 +249,7 @@ Finaly, we initiate a new USB transfer for the bootkit to load and execute.
 
 - We can hook bzero to avoid that
 ???
-The bzero method (changes all data to \0 in specific memory space) is hooked into so that it never reaches our bootloader (transformed into a NOP).
+The bzero method (changes all data to \0 in specific memory space) is hooked into so that it never reaches our bootloader (transformed into a NOP in that case).
 
 This is a "hacky" way to do it according to the people who wrote it, but at least it has the advantage to work on all devices, and to be independent of future code changes.
 
@@ -252,7 +258,7 @@ We now have read-write access to the kernel in the ram, but not to the iPhone's 
 
 - Embed tiny ramdisk in kernel with hijack code
 ???
-In order to retain code execution in usermode, we can embed a tiny ramdisk in the shellcode, in order to hijack root code execution once the phone is booted.
+In order to retain code execution in usermode, we can embed a tiny (fakeish) ramdisk in the shellcode, in order to hijack root code execution once the phone is booted.
 --
 
 - We now have a fork(2) during system boot

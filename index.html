@@ -120,6 +120,12 @@ Over the months it was used to create a full jailbreak for iPhones 5s to X, name
 # 3. How does the jailbreak work ?
 ---
 
+### SecureROM
+
+.center[![SecureROM](./SecureROM.png)]
+
+---
+
 ## 3.1 - Normal use of DFU
 - Start USB DFU protocol:
   - Input output buffer is allocated by the device in the ram
@@ -131,6 +137,8 @@ Over the months it was used to create a full jailbreak for iPhones 5s to X, name
   - i/o buffer is freed
   - If parsing the image fails, the USB stack is activated again
 ???
+DFU stands for Device Firmware Upgrade.
+
 SecureROM DFU image upload is used by Apple to bypass iBoot, the next part of the boot process, as an emergency recovery mecanism.
 
 The image and its signature will be verified before it is used.
@@ -204,10 +212,24 @@ for i in range(6):
 dfu.usb_reset(device)
 dfu.release_device(device)
 ```
+
+Requests that are not a multiple of 64 bytes do not trigger the leak !
 ???
 So we launch multiple USB transfers at the same time, until the stars align and we can insert a gadget.
 
 The "leak" invocation will create a hole in the RAM the size of a USB task, so that it will become the prefered place to put the USB task once the heap becomes full.
+---
+
+.center[![Heap](./heap.png)]
+???
+ZLP = Zero-Length-Packet
+
+---
+
+### We want this
+
+.center[![DFU](./DFU.png)]
+
 ---
 
 ### Payload
@@ -284,6 +306,8 @@ The system will now fork(2) off right as it is booting iOS. In this fork we can 
 ### - enables researchers to do security research
 ### - dual booting
 ### - Linux on iPhone ?
+
+##### Illustrations : https://checkm8.info/checkra1n-jailbreak-exploit/
 
     </textarea>
     <script src="https://remarkjs.com/downloads/remark-latest.min.js">

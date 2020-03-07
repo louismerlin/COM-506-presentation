@@ -40,6 +40,10 @@
         background-position: -50px 552px;
         font-size: 25px;
       }
+
+      img {
+        max-width: 100%;
+      }
     </style>
   </head>
   <body>
@@ -57,8 +61,8 @@ class: center, middle
 # Plan
 
 ### 1. What is a jailbreak ?
-### 2. How did this exploit start ?
-### 3. How does the jailbreak work ?
+### 2. History
+### 3. Deep Dive
 ### 4. Conclusion
 
 ---
@@ -100,13 +104,9 @@ A semi-untethered jailbreak means you can re-jailbreak your iPhone by manually l
 Checkra1n is a semi-tethered jailbreak, so you would need to re-jailbreak your iPhone on every reboot.
 ---
 
-# 2. How did this exploit start ?
-???
-Now we can dive into the history of this exploit.
----
+# 2. History
 
-## 2.1 - ipwndfu and apollo.txt
-### - Late 2019
+### - Late 2019, `ipwndfu` by axi0mX
 ### - Targets SecureROM (immutable code), so unpatchable
 ### - Leads to *checkra1n*
 ???
@@ -117,12 +117,13 @@ It targets SecureROM, the first part of the iOS cold boot process, which is hard
 Over the months it was used to create a full jailbreak for iPhones 5s to X, named checkra1n.
 ---
 
-# 3. How does the jailbreak work ?
+# 3. Deep Dive
 ---
 
 ### SecureROM
 
 .center[![SecureROM](./SecureROM.png)]
+##### .right[https://habr.com/en/company/dsec/blog/472762/]
 
 ---
 
@@ -175,6 +176,10 @@ After the USB stack is activated again, if we send the device data instead of a 
 ???
 In the case of two processors, the A8 and the A9, we can directy overwrite the USB stack, and thus we have direct code execution.
 
+We cannot target the current task's values, as they are already loaded onto the registers.
+
+We can use the `next` pointer though !
+
 Easy Peasy !
 
 ---
@@ -217,20 +222,33 @@ Requests that are not a multiple of 64 bytes do not trigger the leak !
 ???
 So we launch multiple USB transfers at the same time, until the stars align and we can insert a gadget.
 
-Once the stall and leak transfers are finished, because of their size, the device will add "zero-length-packets" tasks to the queue.
+Once the stall and leak transfers are finished, because of their size, the device will add "send zero-length-packets" tasks to the queue.
 
-We will have create a hole in the ram the size of the USB task, so that it will become the prefered place to put it because the heap is full.
+Because of a bug, they will not be freed when DFU shuts off.
 ---
 
 .center[![Heap](./heap.png)]
+##### .right[https://habr.com/en/company/dsec/blog/472762/]
 ???
 ZLP = Zero-Length-Packet
+
+We will have create a nice little hole in the ram.
+
+---
+
+.center[![Alloc](./alloc.png)]
+##### .right[https://habr.com/en/company/dsec/blog/472762/]
+???
+We now restart DFU, and wait for it to do its allocations again. The hole will become the prefered place to put some crucial data because the heap is full.
+
+We can now overflow to `usb_device_io_request`, and gain direct code execution.
 
 ---
 
 ### We want this
 
 .center[![DFU](./DFU.png)]
+##### .right[https://habr.com/en/company/dsec/blog/472762/]
 
 ---
 
@@ -306,7 +324,7 @@ The system will now fork(2) off right as it is booting iOS. In this fork we can 
 # 4. Conclusion
 - latest full jailbreak was on iOS 8 (2014)
 - enables researchers to do security research
-- dual booting
+- [dual booting](https://twitter.com/Basti564/status/1235316256024285184)
 - Linux on iPhone ?
 
 #### Illustrations and content

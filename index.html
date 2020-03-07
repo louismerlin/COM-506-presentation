@@ -217,7 +217,9 @@ Requests that are not a multiple of 64 bytes do not trigger the leak !
 ???
 So we launch multiple USB transfers at the same time, until the stars align and we can insert a gadget.
 
-The "leak" invocation will create a hole in the RAM the size of a USB task, so that it will become the prefered place to put the USB task once the heap becomes full.
+Once the stall and leak transfers are finished, because of their size, the device will add "zero-length-packets" tasks to the queue.
+
+We will have create a hole in the ram the size of the USB task, so that it will become the prefered place to put it because the heap is full.
 ---
 
 .center[![Heap](./heap.png)]
@@ -302,12 +304,14 @@ The system will now fork(2) off right as it is booting iOS. In this fork we can 
 ---
 
 # 4. Conclusion
-### - latest full jailbreak was on iOS 8 (2014)
-### - enables researchers to do security research
-### - dual booting
-### - Linux on iPhone ?
+- latest full jailbreak was on iOS 8 (2014)
+- enables researchers to do security research
+- dual booting
+- Linux on iPhone ?
 
-##### Illustrations : https://checkm8.info/checkra1n-jailbreak-exploit/
+#### Illustrations and content
+- https://habr.com/en/company/dsec/blog/472762
+- https://media.ccc.de/v/36c3-11238-the_one_weird_trick_securerom_hates
 
     </textarea>
     <script src="https://remarkjs.com/downloads/remark-latest.min.js">
